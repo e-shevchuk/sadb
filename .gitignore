@@ -139,3 +139,6 @@ Untitled*.ipynb
 
 # PyCharm
 .idea/
+
+# Internal DB
+data.db

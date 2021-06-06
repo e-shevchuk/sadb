@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 import unittest
-from .service import get_temp_dir
+from service import get_temp_dir
 
 
 # TEST CASES

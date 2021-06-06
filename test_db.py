@@ -1,13 +1,24 @@
+import os
 import unittest
 
-from .data_model import VerySimpleDBObject
-from .db import DB
-from .service import use_test_db, recreate_sqlite_db, get_temporary_db_file
+from data_model import VerySimpleDBObject, apply_model
+from db import DB
+from service import use_test_db, get_temporary_db_file
+
+
+# CONSTANTS
+
+# Names for testing
+ROBIN = 'Robin'
+BATMAN = 'Batman'
 
 
 # TEST CASES
 
 class DBTests(unittest.TestCase):
+
+    def setUp(self):
+        DB.apply_model_func = apply_model
 
     def test_01_init(self):
         """Testing DB connection initialization"""
@@ -34,24 +45,34 @@ class DBTests(unittest.TestCase):
 
         def select_user(fdb, name='Batman'):
             flt = {"name": name}
-            b = fdb.session.query(VerySimpleDBObject).filter_by(**flt).one_or_none()
+            b = fdb.session.query(VerySimpleDBObject) \
+                .filter_by(**flt).one_or_none()
+
             return b
 
         # TMP DB File
         tmp_db_file = get_temporary_db_file()
-        # Refresh the test DB
-        recreate_sqlite_db(tmp_db_file)
-        # Switch to the test DB
-        db = DB(tmp_db_file)
-        # Create a test object
-        create_test_obj()
-        # Check that it is visible
-        self.assertIsNotNone(select_user(db))
 
-        # Create a user in wrapped call, where
-        # the test DB should have been dropped
-        name2 = 'Robin'
-        create_test_obj_wrapped(name2)
-        # Check that user isn't available
-        # TODO: Passes with any str value at the name2 place, while should not
-        self.assertIsNone(select_user(db, name2))
+        # Run the test inside the try block to make sure we remove the tmp DB
+        # file generated in the process, no matter what errors may happen
+        try:
+            # Switch to the test DB
+            db = DB(tmp_db_file, recreate=True)
+            # Create a test object
+            create_test_obj(BATMAN)
+            # Check that it is visible
+            self.assertIsNotNone(select_user(db, BATMAN))
+
+            # Create a user in wrapped call, and make sure that it is created
+            # inside the wrapper. Then leave the wrapper, after which the DB
+            # in which it was created should be dropped => it will not be here
+            create_test_obj_wrapped(ROBIN)
+            # Check that user isn't available
+            self.assertIsNone(select_user(db, ROBIN))
+
+        # Remove the temporary DB file
+        finally:
+            # If the file exists
+            if os.path.isfile(tmp_db_file):
+                # Remove it
+                os.remove(tmp_db_file)

@@ -24,9 +24,9 @@ if [[ $1 == $action_run_tests_and_linting ]]; then
 
     echo "$announce_action_docker_image_tests"
     echo "Starting linting check..."
-    eval "python3 -m flake8 ."
+    eval "python3 -m flake8"
     echo "Starting unittests..."
-    eval "python3 -m unittest discover -p test_*.py"
+    eval "python3 -m unittest"
 
 elif [[ $1 == $action_run_ptw ]]; then
 

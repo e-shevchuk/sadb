@@ -1,12 +1,7 @@
 import os
-from sqlite3 import Error
 from datetime import datetime
-from sqlalchemy import create_engine
 
-from .data_model import apply_model
-from .db import DB, DB_FILE, SQLITE_URI_PREF
-
-# from db import TEST_DB_FILE
+from db import DB, DB_FILE
 
 
 # CONSTANTS
@@ -57,51 +52,28 @@ def get_temporary_db_file():
     return temp_file_path
 
 
-def recreate_sqlite_db(db_file, delete=True):
-    """ Create a database connection to a SQLite database and its file. """
-
-    # If the temporary DB file exists
-    if delete and os.path.exists(db_file):
-        # Remove the temporary db
-        os.remove(db_file)
-
-    # Initialized empty variable for engine
-    engine = None
-    try:
-        # Initialized engine
-        engine = create_engine(SQLITE_URI_PREF+db_file)
-        # Create tables in the db
-        apply_model(engine)
-    except Error as e:
-        print(e)
-    finally:
-        # If we were working with DB engine on the previous step
-        if engine:
-            # Close the DB engine nicely
-            engine.dispose()
-
-
 def use_test_db(func):
     """ Switch test into using the test Database. """
 
     def wrapper(*args, **kwargs):
 
-        # Create random DB file name postfix
-        tmp_db_file = get_temporary_db_file()
         # Save previous file
         db_file_prev = DB.db_file
-        # Recreate the temporary DB
-        recreate_sqlite_db(tmp_db_file)
+        # Create random named temporary DB file
+        tmp_db_file = get_temporary_db_file()
         # Switch connection to the temporary DB
-        DB(tmp_db_file)
+        DB(tmp_db_file, recreate=True)
 
-        # Implement the target function
-        target_func_return = func(*args, **kwargs)
+        # Try to implement the target function
+        try:
+            target_func_return = func(*args, **kwargs)
 
-        # Switch connection to the previous DB file
-        DB(db_file_prev)
-        # Remove the temporary DB
-        os.remove(tmp_db_file)
+        # If we failed - remove the temporary DB anyway
+        finally:
+            # Switch connection to the previous DB file
+            DB(db_file_prev)
+            # Remove the temporary DB
+            os.remove(tmp_db_file)
 
         # Return the result
         return target_func_return
