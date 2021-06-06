@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# My Temp directory
+temp/
+
+# Jupyter temporary Notebooks
+Untitled*.ipynb
+
+# MacOS
+.DS_Store
+
+# PyCharm
+.idea/
