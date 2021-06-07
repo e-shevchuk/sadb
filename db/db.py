@@ -11,23 +11,6 @@ DB_FILE = 'data.db'
 SQLITE_URI_PREF = "sqlite:///"
 
 
-# HELPER FUNCTIONS
-
-def remove_file(file_path):
-    """ Removes the file, if it doesn't exist, do nothing. """
-
-    try:
-        # Try to remove the file
-        os.remove(file_path)
-
-    # If failed to remove
-    except OSError as e:
-        # If the reason is different then the file non-existence
-        if e.errno != errno.ENOENT:
-            # Re-rise the exception
-            raise
-
-
 # DB CONNECTOR CLASS
 
 class DB:
@@ -84,16 +67,15 @@ class DB:
             # If the file is different from the one stored in the Class
             if DB.db_file != db_file or recreate:
                 # Disconnect from the DB
-                self.disconnect()
-                # If DB should be re-created, remove the new db_file first
-                recreate and remove_file(db_file)
+                self.disconnect(remove_db_file=recreate)
                 # Connect to the new DB file
                 self.connect(db_file)
 
         # If the connection isn't initialized
         else:
             # If DB should be re-created, remove the new db_file first
-            recreate and remove_file(db_file)
+            DB.db_file = db_file
+            recreate and self.remove_db_file()
             # Initialize the connection
             self.connect(db_file)
 
@@ -123,8 +105,9 @@ class DB:
         DB.apply_model_func(self.engine)
 
     @staticmethod
-    def disconnect():
+    def disconnect(remove_db_file=False):
         """ Close the connection and all the sessions. """
+
         # Close the connection if it is opened
         if DB.engine is not None:
             DB.engine.dispose()
@@ -133,6 +116,28 @@ class DB:
         if DB.session is not None:
             DB.session.close()
             DB.session = None
+        # Remove the DB file if it is requested
+        if remove_db_file:
+            DB.remove_db_file()
+
+    @staticmethod
+    def remove_db_file():
+        """ Removes the file, if it doesn't exist, do nothing. """
+
+        # If DB connection isn't terminated yet - throw an error
+        err_msg = 'Can\'t remove the DB file while connection is active.'
+        assert DB.engine is None and DB.session is None, err_msg
+
+        try:
+            # Try to remove the file
+            os.remove(DB.db_file)
+
+        # If failed to remove
+        except OSError as e:
+            # If the reason is different then the file non-existence
+            if e.errno != errno.ENOENT:
+                # Re-rise the exception
+                raise
 
     def tearDown(self):
         self.disconnect()
