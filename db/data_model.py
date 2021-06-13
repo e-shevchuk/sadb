@@ -11,6 +11,9 @@ class VerySimpleDBObject(Base):
     test_object_id = Column(Integer, primary_key=True)
     name = Column(String)
 
+    def __repr__(self):
+        return f'<id: {self.test_object_id} name: {self.name}>'
+
 
 # PUSH THE MODEL TO DB
 

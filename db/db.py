@@ -26,7 +26,7 @@ class DB:
         DB.apply_model_func = apply_model_func or DB.apply_model_func
 
         # If DB connection initialized already
-        if db_file is not None or self.engine is None:
+        if db_file is not None or self.engine is None or apply_model_func:
 
             # If no DB file passed, use default
             db_file = db_file or DB_FILE
