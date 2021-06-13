@@ -65,3 +65,19 @@ class DBTests(unittest.TestCase):
         create_test_obj_wrapped(ROBIN)
         # Check that user isn't available
         self.assertIsNone(select_user(db, ROBIN))
+
+    @use_test_db
+    def test_03_apply_model_to_an_existing_db(self):
+        """ Tests applying the model to an initialized DB. """
+
+        # Apply the model to the DB
+        db = DB(apply_model_func=apply_model)
+
+        # Create the test object
+        db.session.add(VerySimpleDBObject(name='Varis'))
+        # Add the test object to the DB
+        db.session.commit()
+        db.session.query(VerySimpleDBObject).all()
+
+        # Check that the object is created
+        self.assertEqual(db.session.query(VerySimpleDBObject)[0].name, 'Varis')
